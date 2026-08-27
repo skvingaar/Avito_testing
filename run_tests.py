@@ -1,4 +1,4 @@
-"""Простой кроссплатформенный запуск UI-тестов.
+"""Простой запуск UI-тестов на macOS/Linux.
 
 Первый запуск подготавливает локальное окружение и устанавливает Chromium.
 Последующие запуски сразу переходят к тестам.
@@ -21,8 +21,6 @@ REQUIREMENTS = ROOT / "requirements.txt"
 
 
 def venv_python() -> Path:
-    if sys.platform == "win32":
-        return VENV_DIR / "Scripts" / "python.exe"
     return VENV_DIR / "bin" / "python"
 
 
