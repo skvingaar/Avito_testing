@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import subprocess
 import sys
 import venv
@@ -16,6 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 VENV_DIR = ROOT / ".venv"
 SETUP_MARKER = VENV_DIR / ".autotests-ready"
+REQUIREMENTS = ROOT / "requirements.txt"
 
 
 def venv_python() -> Path:
@@ -29,17 +31,22 @@ def run(command: list[str]) -> None:
 
 
 def prepare(force: bool = False) -> Path:
+    requirements_hash = hashlib.sha256(REQUIREMENTS.read_bytes()).hexdigest()
     python = venv_python()
     if not python.exists():
         print("Первый запуск: создаю окружение для автотестов…")
         venv.create(VENV_DIR, with_pip=True)
 
-    if force or not SETUP_MARKER.exists():
+    setup_is_current = (
+        SETUP_MARKER.exists()
+        and SETUP_MARKER.read_text(encoding="utf-8").strip() == requirements_hash
+    )
+    if force or not setup_is_current:
         print("Устанавливаю зависимости…")
         run([str(python), "-m", "pip", "install", "-r", "requirements.txt"])
         print("Устанавливаю браузер Chromium…")
         run([str(python), "-m", "playwright", "install", "chromium"])
-        SETUP_MARKER.touch()
+        SETUP_MARKER.write_text(requirements_hash, encoding="utf-8")
 
     return python
 
