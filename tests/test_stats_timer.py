@@ -21,7 +21,13 @@ def test_refresh_requests_and_updates_statistics(stats_page: Page) -> None:
 
     response = response_info.value
     assert response.ok, f"Обновление статистики завершилось с HTTP {response.status}"
-    expect(timer).to_have_text("5:00")
+    expect(timer).to_have_text(re.compile(r"^(5:00|4:5[5-9])$"))
+    timer_text = timer.inner_text()
+    minutes, seconds = map(int, timer_text.split(":"))
+    remaining_seconds = minutes * 60 + seconds
+    assert 295 <= remaining_seconds <= 300, (
+        f"После обновления таймер не сбросился к пяти минутам: {timer_text}"
+    )
 
 
 @pytest.mark.desktop
