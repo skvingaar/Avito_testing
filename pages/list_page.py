@@ -14,9 +14,16 @@ class ListPage:
         self.page = page
         self.cards = page.locator(self.CARD)
         self.min_price, self.max_price = page.get_by_role("spinbutton").all()
-        self.sort = page.get_by_text("Сортировать по", exact=True).locator("xpath=following::select[1]")
-        self.order = page.get_by_text("Порядок", exact=True).locator("xpath=following::select[1]")
-        self.category = page.get_by_text("Категория", exact=True).locator("xpath=following::select[1]")
+        comboboxes = page.get_by_role("combobox")
+        self.sort = comboboxes.filter(
+            has=page.get_by_role("option", name="Цене", exact=True)
+        )
+        self.order = comboboxes.filter(
+            has=page.get_by_role("option", name="По возрастанию", exact=True)
+        )
+        self.category = comboboxes.filter(
+            has=page.get_by_role("option", name="Все категории", exact=True)
+        )
         self.only_urgent = page.get_by_role("checkbox", name=re.compile("Только срочные"))
 
     @staticmethod
@@ -79,7 +86,14 @@ class ListPage:
         # The native checkbox is visually hidden; click its accessible label.
         self.page.get_by_text("Только срочные", exact=False).first.click()
         expect(self.only_urgent).to_be_checked()
-        self.page.wait_for_timeout(1_000)
+        self.page.wait_for_function(
+            """selector => {
+                const cards = [...document.querySelectorAll(selector)];
+                return cards.length > 0
+                    && cards.every(card => card.textContent.includes('Срочно'));
+            }""",
+            arg=self.CARD,
+        )
 
     def urgent_badges(self) -> Locator:
         return self.cards.get_by_text(re.compile("Срочно"))

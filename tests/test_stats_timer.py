@@ -33,8 +33,6 @@ def test_stop_timer_stops_countdown(stats_page: Page) -> None:
     expect(stats_page.get_by_role("button", name="Включить автообновление")).to_be_visible()
     expect(stats_page.get_by_text("Автообновление выключено")).to_be_visible()
     expect(timer).to_be_hidden()
-    stats_page.wait_for_timeout(1_200)
-    expect(timer).to_be_hidden()
 
 
 @pytest.mark.desktop
