@@ -18,7 +18,7 @@ def test_price_filter_keeps_prices_in_range(listing_page: ListPage) -> None:
     listing_page.apply_price_filter(min_price, max_price)
     filtered_prices = listing_page.visible_prices()
 
-    assert filtered_prices, "После применения диапазона цен выдача неожиданно пуста"
+    assert filtered_prices, "После фильтрации не найдено ни одного объявления"
     prices_outside_range = [
         price for price in filtered_prices if not min_price <= price <= max_price
     ]
