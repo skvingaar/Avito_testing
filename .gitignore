@@ -1,8 +1,13 @@
-.venv/
-.DS_Store
+# Python
 __pycache__/
 *.py[cod]
+.venv/
 .pytest_cache/
+
+# Test artifacts
 test-results/
 playwright-report/
+
+# Local files
+.DS_Store
 .local-backups/

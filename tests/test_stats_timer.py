@@ -1,46 +1,35 @@
 import re
 
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import expect
+
+from pages.stats_page import StatsPage
 
 
-def _timer(page: Page):
-    return page.get_by_text(re.compile(r"^\d+:\d{2}$"))
+FULL_TIMER_RANGE = re.compile(r"^(5:00|4:5[5-9])$")
 
 
 @pytest.mark.desktop
-def test_refresh_requests_and_updates_statistics(stats_page: Page) -> None:
-    refresh = stats_page.get_by_role("button", name="Обновить сейчас")
-    timer = _timer(stats_page)
+def test_refresh_updates_statistics(statistics_page: StatsPage) -> None:
+    response = statistics_page.refresh_statistics()
 
-    with stats_page.expect_response(
-        lambda response: response.request.resource_type in {"fetch", "xhr"}
-        and "/api/v1/ads" in response.url
-    ) as response_info:
-        refresh.click()
-
-    response = response_info.value
     assert response.ok or response.status == 304, (
         f"Обновление статистики завершилось с HTTP {response.status}"
     )
-    expect(timer).to_have_text(re.compile(r"^(5:00|4:5[5-9])$"))
-    timer_text = timer.inner_text()
-    minutes, seconds = map(int, timer_text.split(":"))
-    remaining_seconds = minutes * 60 + seconds
-    assert 295 <= remaining_seconds <= 300, (
-        f"После обновления таймер не сбросился к пяти минутам: {timer_text}"
+    expect(statistics_page.timer).to_have_text(FULL_TIMER_RANGE)
+    seconds_left = statistics_page.timer_seconds()
+    assert 295 <= seconds_left <= 300, (
+        f"После обновления осталось {seconds_left} секунд вместо пяти минут"
     )
 
 
 @pytest.mark.desktop
-def test_stop_timer_stops_countdown(stats_page: Page) -> None:
-    stop = stats_page.get_by_role("button", name="Отключить автообновление")
-    timer = _timer(stats_page)
+def test_stop_timer_stops_countdown(statistics_page: StatsPage) -> None:
+    statistics_page.stop_button.click()
 
-    stop.click()
-    expect(stats_page.get_by_role("button", name="Включить автообновление")).to_be_visible()
-    expect(stats_page.get_by_text("Автообновление выключено")).to_be_visible()
-    expect(timer).to_be_hidden()
+    expect(statistics_page.start_button).to_be_visible()
+    expect(statistics_page.timer_stopped_message).to_be_visible()
+    expect(statistics_page.timer).to_be_hidden()
 
 
 @pytest.mark.desktop
@@ -48,14 +37,12 @@ def test_stop_timer_stops_countdown(stats_page: Page) -> None:
     strict=True,
     reason="BUG-02: после остановки кнопка запуска не возобновляет таймер",
 )
-def test_start_timer_resumes_countdown(stats_page: Page) -> None:
-    stats_page.get_by_role("button", name="Отключить автообновление").click()
-    start = stats_page.get_by_role("button", name="Включить автообновление")
-    expect(start).to_be_visible()
+def test_start_timer_resumes_countdown(statistics_page: StatsPage) -> None:
+    statistics_page.stop_button.click()
+    expect(statistics_page.start_button).to_be_visible()
 
-    start.click()
-    expect(stats_page.get_by_role("button", name="Отключить автообновление")).to_be_visible()
-    timer = _timer(stats_page)
-    expect(timer).to_be_visible()
-    initial = timer.inner_text()
-    expect(timer).not_to_have_text(initial, timeout=2_500)
+    statistics_page.start_button.click()
+    expect(statistics_page.stop_button).to_be_visible()
+    expect(statistics_page.timer).to_be_visible()
+    timer_before_wait = statistics_page.timer.inner_text()
+    expect(statistics_page.timer).not_to_have_text(timer_before_wait, timeout=2_500)

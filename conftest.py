@@ -1,7 +1,8 @@
-import re
-
 import pytest
 from playwright.sync_api import Page
+
+from pages.list_page import ListPage
+from pages.stats_page import StatsPage
 
 
 BASE_URL = "https://cerulean-praline-8e5aa6.netlify.app"
@@ -13,11 +14,12 @@ def configure_page(page: Page) -> None:
 
 
 @pytest.fixture
-def app_page(page: Page) -> Page:
+def listing_page(page: Page) -> ListPage:
     page.goto(BASE_URL)
     page.get_by_role("heading", name="Модерация объявлений").wait_for()
-    page.locator("main h3").first.wait_for(timeout=30_000)
-    return page
+    listing = ListPage(page)
+    listing.wait_until_loaded()
+    return listing
 
 
 @pytest.fixture
@@ -29,10 +31,7 @@ def mobile_page(page: Page) -> Page:
 
 
 @pytest.fixture
-def stats_page(page: Page) -> Page:
-    # Direct /stats requests return Netlify 404, therefore navigate through the SPA.
-    page.goto(BASE_URL)
-    page.get_by_role("link", name=re.compile("Статистика")).click()
-    page.get_by_role("heading", name=re.compile("Статистика модератора")).wait_for()
-    return page
-
+def statistics_page(page: Page) -> StatsPage:
+    statistics = StatsPage(page)
+    statistics.open(BASE_URL)
+    return statistics
