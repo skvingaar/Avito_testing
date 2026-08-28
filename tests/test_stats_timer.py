@@ -6,6 +6,7 @@ from playwright.sync_api import expect
 from pages.stats_page import StatsPage
 
 
+# Допустимый таймер: 4:55–5:00.
 FULL_TIMER_RANGE = re.compile(r"^(5:00|4:5[5-9])$")
 
 
