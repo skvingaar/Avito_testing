@@ -15,12 +15,14 @@ def test_refresh_requests_and_updates_statistics(stats_page: Page) -> None:
 
     with stats_page.expect_response(
         lambda response: response.request.resource_type in {"fetch", "xhr"}
-        and response.ok
+        and "/api/v1/ads" in response.url
     ) as response_info:
         refresh.click()
 
     response = response_info.value
-    assert response.ok, f"Обновление статистики завершилось с HTTP {response.status}"
+    assert response.ok or response.status == 304, (
+        f"Обновление статистики завершилось с HTTP {response.status}"
+    )
     expect(timer).to_have_text(re.compile(r"^(5:00|4:5[5-9])$"))
     timer_text = timer.inner_text()
     minutes, seconds = map(int, timer_text.split(":"))
